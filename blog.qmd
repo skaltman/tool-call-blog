@@ -1,0 +1,376 @@
+---
+title: "Easy tool calls with ellmer and chatlas"
+format: html
+---
+
+## What is tool calling?
+
+Large language models (LLMs) are powerful but lack access to external data or systems unless you explicitly connect them. For example, if you ask an LLM what your schedule looks like next week, it will respond that it doesn't know because it doesn't have access to your calendar.
+
+::: {.callout-tip}
+We will use [ellmer](https://ellmer.tidyverse.org/index.html) and [chatlas](https://posit-dev.github.io/chatlas/) to interact with LLMs. If you're unfamiliar with the basics of ellmer, chatlas, or working with LLM APIs, check out the packages websites and these resources:
+
+* [Announcing ellmer: A package for interacting with Large Language Models in R](https://posit.co/blog/announcing-ellmer/)
+* [Announcing chatlas: A package for interacting with Large Language Models in Python](https://posit.co/blog/announcing-chatlas/)
+:::
+
+::: {.panel-tabset} 
+
+## Python
+
+```{python}
+import chatlas
+
+chat = chatlas.ChatAnthropic(system_prompt="You are a helpful personal assistant.")
+chat.chat("What's my schedule like next week?")
+```
+
+```
+I don't have access to your personal calendar or schedule. I can't see your actual 
+appointments or commitments. To know your schedule for next week, you would need to
+check your own calendar, planner, or scheduling system.   
+```
+
+## R
+
+```{r}
+library(ellmer)
+
+chat <- chat_claude(system_prompt = "You are a helpful personal assistant.")
+chat$chat("What's my schedule like next week?")
+```
+
+```
+I don't have access to your personal schedule. To help you with your schedule for 
+next week, I would need you to share that information with me. 
+
+You could tell me about any appointments you already have planned, or ask me for 
+suggestions on how to organize your upcoming week effectively.
+```
+:::
+
+If the LLM could access our calendar, however, it could easily reason about it and answer our scheduling questions. We can use **tool calling** to grant the LLM that access.
+
+## What is tool calling? 
+
+Tool calling lets an LLM request that specific code be run when it needs to access data or perform actions outside its own capabilities. It works like this:
+
+1. You ask the LLM to answer a question, do a task, etc. 
+
+2. The model realizes it needs a function (a "tool") to fulfill the request.
+
+3. The model asks the host code to run that function.
+
+4. The function runs, returns data, and the model uses that data in its response.
+
+::: {.callout-tip}
+For more information about tool-calling, see the Tool calling articles on the [ellmer](https://ellmer.tidyverse.org/articles/tool-calling.html) and [chatlas websites](https://posit-dev.github.io/chatlas/tool-calling.html). 
+:::
+
+Importantly, the **model itself does not execute code**. The model only requests that the caller (our R or Python script) executes the code. 
+
+## Why use tool calling?
+
+Tool calling gives the LLM capabilities it wouldn't otherwise have access to, including:
+
+* Access to APIs, databases, files, etc. 
+* The ability to use up-to-date or user-specific information.
+* Respond more intelligently or specifically to user requests.
+
+
+## Implement tool calling in ellmer or chatlas
+
+To implement tool calling with ellmer or chatlas, you need three components:
+
+1. **A function (or tool)** that implements your desired action.
+
+2. A **chat object** created with ellmer or chatlas.
+
+3. **Tool registration** so the model knows how to use your function.
+
+While not required, you will also likely want to write a custom system prompt instructing the model when and how to use your tool.
+
+### Calendar API example
+
+Now, let's see it in action in our calendar example. Here is the code you need for either Python or R. Next, we'll look at each of the components in more detail. 
+
+::: {.panel-tabset}
+
+### Python
+
+```{python}
+# 1. Define and document the tool
+
+def get_calendar_events(start_date: str, end_date: str) -> List[Dict[str, str]]:
+    """
+    Fetch Google Calendar events between two dates.
+
+    Parameters
+    ----------
+    start_date : str
+        The start date in "YYYY-MM-DD" format.
+    end_date : str
+        The end date in "YYYY-MM-DD" format.
+
+    Returns
+    -------
+    List[dict]
+        A list of events with 'start' and 'summary' fields.
+    """
+    creds = authenticate()
+    service = build_calendar_service(creds)
+    return query_api(service, start_date, end_date)
+
+# 2. Initialize a chat
+
+chat = chatlas.ChatAnthropic(system_prompt=open("prompt-calendar.md", "r").read())
+
+# 3. Register the tool
+
+chat.register_tool(get_calendar_events)
+
+#  Start the chat console 
+chat.console()
+```
+
+### R
+
+```{r}
+# 1. Define and document the tool
+
+#' Gets the calendar events between start_date and end_date
+#'
+#' @param start_date Start date, in YYYY-MM-DD format.
+#' #' @param end_date End date, in YYYY-MM-DD format.
+#' @return A tibble containing the calendar events in the date range. 
+get_calendar_events <- function(start_date, end_date) {
+
+  token <- calendar_authenticate()
+
+  events <- query_api(start_date, end_date, token)
+
+  if (length(events) == 0) { return(tibble()) }
+
+  tibble(
+    id = events$id,
+    summary = events$summary,
+    start = events$start$dateTime,
+    end =  events$end$dateTime
+  )
+}
+
+# 2. Initialize a chat
+
+chat <- chat_claude(system_prompt = readLines("prompt-calendar.md"))
+
+# 3. Register the tool
+
+chat$register_tool(tool(
+  get_calendar_events,
+  "Fetches calendar events between a specified start and end date.",
+  start_date = type_string(
+       "The start date from which to fetch calendar events. It should be a string representing the 
+date in the format YYYY-MM-DD.",
+       required = TRUE
+  ),
+  end_date = type_string(
+       "The end date up to which to fetch calendar events. It should be a string representing the 
+date in the format YYYY-MM-DD.",
+       required = TRUE
+  )
+))
+
+#  Start the chat console 
+live_console(chat)
+```
+
+:::
+
+::: {.callout-note} 
+To keep the example focused, we've created helper functions for authenticating to the Google Calendar API and querying the API. You can see the full script here: [link].
+:::
+
+Let's take a look at each of the pieces.
+
+### 1. Define the Tool Function
+
+Tool functions are regular R or Python functions. 
+
+::: {.panel-tabset}
+
+### Python
+
+```{python}
+def get_calendar_events(start_date: str, end_date: str) -> List[Dict[str, str]]:
+    """
+    Fetch Google Calendar events between two dates.
+
+    Parameters
+    ----------
+    start_date : str
+        The start date in "YYYY-MM-DD" format.
+    end_date : str
+        The end date in "YYYY-MM-DD" format.
+
+    Returns
+    -------
+    List[dict]
+        A list of events with 'start' and 'summary' fields.
+    """
+    creds = authenticate()
+    service = build_calendar_service(creds)
+    return query_api(service, start_date, end_date)
+```
+
+### R
+
+In R, use [roxygen2 comments](https://roxygen2.r-lib.org/) to document the function, just like you would for a function in an R package.
+
+```{r}
+#' Gets the calendar events between start_date and end_date
+#'
+#' @param start_date Start date, in YYYY-MM-DD format.
+#' #' @param end_date End date, in YYYY-MM-DD format.
+#' @return A tibble containing the calendar events in the date range. 
+get_calendar_events <- function(start_date, end_date) {
+
+  token <- calendar_authenticate()
+
+  events <- query_api(start_date, end_date, token)
+
+  if (length(events) == 0) { return(tibble()) }
+
+  tibble(
+    id = events$id,
+    summary = events$summary,
+    start = events$start$dateTime,
+    end =  events$end$dateTime
+  )
+}
+```
+
+:::
+
+The process is largely the same as writing a function for a human user. 
+
+In order for the LLM to interact with the tool, however, inputs and outputs must be JSON-compatible data types. This is because the LLM API talks in JSON. So it can only request the tool call be run in JSON, and get back data in JSON. This means that returning things like a function, enivronment, etc. will not work as expected. Stick to basic types (strings, integers, doubles, lists, etc.). Data frames will work, although keep in mind that this can quickly eat up a lot of tokens, since everything in the data frame counts as tokens. 
+
+You can learn more about type limitations [here](https://ellmer.tidyverse.org/articles/tool-calling.html) for ellmer and here for [chatlas](https://posit-dev.github.io/chatlas/tool-calling.html#tool-limitations). 
+
+The inputs and outputs to the function, however, must be JSON-compatible date types.
+
+
+When writing the function, however, remember you are writing the function for an LLM. The arguments to the function should be things that the LLM can actually provide (e.g., not confidential credentials it doesn't have access to) and the return value should be information that is of use to the LLM. 
+
+For example, in our case, we want the LLM to be able to retrieve information about our calendar. Based on the user's request, the LLM can provide dates to the function, so those are the arguments. Then, the function returns a list (Python) or tibble (R) of calendar events.
+
+Note that the model only deals with JSON. In other words, the functions inputs and outputs must be JSON-compatible types. This means that more complex return values like functions, environments, etc. won't work. 
+
+It's also important to remember that the LLM is not actually calling your function. It requests that the function be called wiht particular arguments. The LLM is more like a typical function user than a programming language. It does not run code, it just requests that the code be run with particular, context-informed arguments. So if you want the LLM to be able to control aspects of your function, you need to abstract those elements into arguments, just like you would when writing. 
+
+The model doesn’t run the tool itself—it just requests that it be run, with specific arguments
+
+All arguments and return values must be JSON-compatible
+
+Think of the model like a user: your function must be understandable and usable based on its documentation and the system prompt
+
+#### 2. Initialize a chat
+
+Next, create a chat with ellmer or chatlas using your desired chat function. You can see a list of available models and their corresponding functions for ellmer [here](https://ellmer.tidyverse.org/reference/index.html#chatbots) and for chatlas [here](https://posit-dev.github.io/chatlas/reference/#chat-model-providers). 
+
+These functions create `Chat` objects. These objects will allow us to chat back and forth with the LLM. You can also use these functions' `system_prompt` parameter to specify a system prompt. In our calendar examples, we supply a markdown file containing our prompt. You can learn more about prompt design [here](https://posit-dev.github.io/chatlas/prompt-design.html). In yoru system prompt, it is helpufl to incldue information about when and how to use a tool, as well as include examples conversations or tool calls. 
+
+::: {.panel-tabset}
+
+### Python
+
+```{python}
+chat = chatlas.ChatAnthropic(system_prompt=open("prompt-calendar.md", "r").read())
+```
+
+### R
+
+```{r}
+chat <- chat_claude(system_prompt = readLines("prompt-calendar.md"))
+```
+
+:::
+
+#### 3. Register the tool
+
+Now that we've created the tool function and created a `Chat` object, we need to _register_ the tool. Registering the tool lets the LLM know about the tool and how to use it. It will allow the LLM to request the tool be called in R or Python. 
+
+To register the tool, use `chat.register_tool()` in Python or `chat$register_tool()` and `tool()` in R. 
+
+::: {.panel-tabset}
+
+### Python
+
+```{python}
+chat.register_tool(get_calendar_events)
+```
+
+### R
+
+In R, `tool()` requires you to specify the `.description` argument, which describes what your function does. To provide more information about the arguments, you can also provide name-value pairs that define the arguments and their types accepted by the function. You can see the available type specifications [here](https://ellmer.tidyverse.org/reference/type_boolean.html). Use `required = TRUE` if that argument is required. 
+
+
+```{r}
+chat$register_tool(tool(
+  get_calendar_events,
+  .description = "Fetches calendar events between a specified start and end date.",
+  start_date = type_string(
+       "The start date from which to fetch calendar events. It should be a string representing the 
+date in the format YYYY-MM-DD.",
+       required = TRUE
+  ),
+  end_date = type_string(
+       "The end date up to which to fetch calendar events. It should be a string representing the 
+date in the format YYYY-MM-DD.",
+       required = TRUE
+  )
+))
+```
+
+:::
+
+### Start chatting
+
+The final step is just to either send an initial message to the model or start up an interactive conversation in the console (`chat.console()` in Python; `live_console(chat)` in R).
+
+Starting an interactive chat in the console will allow us to chat back and forth with the model about our schedule. 
+
+Below, you can see our calendar tool in action.
+
+<!-- images/chat-console-ellmer.mov --> 
+
+
+### In a Shiny app
+
+Now, let's take a look at an example you might want to embed in a Shiny app. Tool calling is especially useful in interactive contexts like Shiny apps because you might want the LLM to do things within your app -- create a novel plot, filter a datatable, update a value box, etc. -- and without tool-calling, the LLM can't really do that. Remember, they are limiting to essentially receiving and sending JSON-compatible files. Without extra work by you, they can't just work your Shiny app for you. Just like in our previous examples, you may also want the LLM in your Shiny app to have access to information that it doesn't nativelly have, like your current time or calendar.
+
+These use cases all follow a similar pattern: you want the Shiny app to reactively update based on what the user says (in a chat stream or input box) but use the LLMs ability to turn vague user input ("I want to see data for the past three years") into an actionable function call.
+
+One thing that you'll likely want to do in these Shiny tool functions that we didn't do earlier, however, is essentially call them for their side effects. Now, the function output might not be as important as them updating a reactive value. 
+
+Let's take a look at an example app that can tell you about a database and create a plot based on the user's requests. 
+
+## Tips and tricks
+
+1. Build up your app or command line tool part-by-part. First, just write a function that carries out the funcionality you want and test that function normally, without even thinking about AI. When you're satisfied it works as expected, then you register the tool, write a system prompt, and test it out in a command line tool. After that works, you can embed the tool in a Shiny app. Without a step by step process, it can be difficult to pinpint where an issue is coming from. 
+2. You can ask the LLM what happened if something goes wrong. For example, if it tells you your tool function returned an error and so it can't answer your question, you can ask it for more details about that error -- it will have the complete error message. This can be helpful for debugging. 
+3. Include instructions about how and when to use your tool in your system prompt. Registering the tool provides some information about how the tool should work, but including additional information in the system prompt makes it more likely that the LLM will actually call the tool how and when you want. For a comprehensive example of this, see the [sidebot system prompt](https://github.com/jcheng5/r-sidebot/blob/main/prompt.md).
+4. Make sure the LLM is _actually calling the tool_. Sometimes, the LLM will act as if it called the tool but hasn't actually called the tool, which will become apparent at some point when it doesn't have access to the information it says it did or that information is wrong. For example, when testing the calendar scripts, I discovered the LLM wasn't actually calling my `get_date()` function to figure out the date and was assuming it was January 2024. I fixed the problem by being clearer about when the LLM should call `get_date()` in the system prompt.
+5. The LLM can call multiple tools in one turn. In our calendar example, it calls `get_date()` and then uses that information to call `get_calendar_events()`, all in one turn. 
+
+Another important, useful feature of tool calling is that if the tool call returns an error, chatlas or ellmer will send the error message back to the LLM and the LLM may try again. 
+
+Build incrementally. Test the function on its own. Then add the model. Then embed it in your app.
+
+Use the system prompt. Describe what the tool does and when to use it.
+
+Debug via model responses. If something breaks, ask the model what happened—it sees the error.
+
+Chain tools. Models can call multiple tools in one turn (e.g., get today’s date, then call the calendar).
+
+Check that tools are really being called. Sometimes the model simulates the answer without actually requesting the tool.
