@@ -66,7 +66,7 @@ Tool calling lets an LLM request that specific code be run when it needs to acce
 4. The function runs, returns data, and the model uses that data in its response.
 
 ::: {.callout-tip}
-For more information about tool-calling, see the Tool calling articles on the [ellmer](https://ellmer.tidyverse.org/articles/tool-calling.html) and [chatlas websites](https://posit-dev.github.io/chatlas/tool-calling.html). 
+For more information about tool-calling, see the tool calling articles on the [ellmer](https://ellmer.tidyverse.org/articles/tool-calling.html) and [chatlas websites](https://posit-dev.github.io/chatlas/tool-calling.html). 
 :::
 
 Importantly, the **model itself does not execute code**. The model only requests that the caller (our R or Python script) executes the code. 
@@ -94,7 +94,7 @@ While not required, you will also likely want to write a custom system prompt in
 
 ### Calendar API example
 
-Now, let's see it in action in our calendar example. Here is the code you need for either Python or R. Next, we'll look at each of the components in more detail. 
+Now, let's see it in action in our calendar example. Below is the code in Python and R. Next, we'll look at each of the components in more detail. 
 
 ::: {.panel-tabset}
 
@@ -189,7 +189,7 @@ live_console(chat)
 :::
 
 ::: {.callout-note} 
-To keep the example focused, we've created helper functions for authenticating to the Google Calendar API and querying the API. You can see the full script here: [link].
+To keep the example focused, we've created helper functions for authenticating to the Google Calendar API and querying the API. We also created a tool that can get the current date so the user can ask questions like, "What's my schedule like today?" You can see the full scripts here: [R](https://github.com/skaltman/tool-call-blog/blob/main/calendar.R), [Python](https://github.com/skaltman/tool-call-blog/blob/main/calendar.py).
 :::
 
 Let's take a look at each of the pieces.
@@ -336,33 +336,29 @@ The final step is just to either send an initial message to the model or start u
 
 Below, you can see our calendar tool in action.
 
-<!-- images/chat-console-ellmer.mov --> 
+{{< video images/chat-console-ellmer.mov >}}
 
 
 ### In a Shiny app
 
-Now, let's take a look at an example you might want to embed in a Shiny app. Tool calling is especially useful in interactive contexts like Shiny apps because you might want the LLM to do things within your app -- create a novel plot, filter a datatable, update a value box, etc. -- and without tool-calling, the LLM can't really do that. Remember, they are limiting to essentially receiving and sending JSON-compatible files. Without extra work by you, they can't just work your Shiny app for you. Just like in our previous examples, you may also want the LLM in your Shiny app to have access to information that it doesn't natively have, like your current time or calendar.
+Tool calling is especially useful in interactive contexts like Shiny apps because you might want the LLM to do things within your app -- create a novel plot, filter a datatable, update a value box, etc. -- and without tool-calling, the LLM can't really do that. Remember, they are limiting to essentially receiving and sending JSON-compatible files. Without extra work by you, they can't just work your Shiny app for you. Just like in our previous examples, you may also want the LLM in your Shiny app to have access to information that it doesn't natively have, like your current time or calendar.
 
-These use cases all follow a similar pattern: you want the Shiny app to reactively update based on what the user says (in a chat stream or input box) but use the LLMs ability to turn vague user input ("I want to see data for the past three years") into an actionable function call.
+Implementing tool calling in a Shiny app is very similar to implementing tool calling outside a Shiny app. Include the tool code and tool registration code in the server function. You can see example apps that implement our calendar functionality [here]() (R) and [here]() (Python). 
 
-One thing that you'll likely want to do in these Shiny tool functions that we didn't do earlier, however, is essentially call them for their side effects. Now, the function output might not be as important as them updating a reactive value. 
-
-Let's take a look at an example app that can tell you about a database and create a plot based on the user's requests. 
+::: {.callout-tip}
+To learn more about creating Shiny apps that interact with LLMs, see [shinychat](https://posit-dev.github.io/shinychat/) for R and the [Generative AI section](https://shiny.posit.co/py/docs/genai-inspiration.html) of the Shiny for Python website for Python. 
+:::
 
 ## Tips and tricks
-
-1. Build up your app or command line tool part-by-part. First, just write a function that carries out the funcionality you want and test that function normally, without even thinking about AI. When you're satisfied it works as expected, then you register the tool, write a system prompt, and test it out in a command line tool. After that works, you can embed the tool in a Shiny app. Without a step by step process, it can be difficult to pinpint where an issue is coming from. 
 
 1. **Build incrementally.** Start by just writing and testing the core function, without involving the LLM. Once it works, register the tool, write a system prompt, and test in a simple chat console interface. Then, if you want, try embedding the tool in a Shiny app. Working step-by-step makes it easier to pinpoint issues.
 
 2. **Debug using model responses.** If something goes wrong, you can ask the model what happened. It has access to the full error message returned by your tool function, which can help you diagnose the issue without even leaving the chat.
 
 3. **Write a thorough system prompt.** Registering the tool provides some information about how the tool should work, but including additional information in the system prompt makes it more likely that the LLM will actually call the tool how and when you want. See the [sidebot system prompt](https://github.com/jcheng5/r-sidebot/blob/main/prompt.md) for an example of a thorough, well-structured system prompt. You may also need to "debug" or add to your system prompt if the LLM isn't using your tool how you want. 
-
 4. **Verify that the tool is actually being called.** Sometimes, the model might simulate a response without actually triggering the tool. If the results seem off or the data seems fabricated, check that the tool function is actually being called. You may need to revise your system prompt to clarify when and how the LLM should initiate a tool call.
 
 5. **Chain multiple tools.** LLMs can call more than one tool per turn. In our example, the LLM first calls `get_date()` to fetch the current date, and then passes that information to `get_calendar_events()`, all in one turn.
-
 
 6. **Take advantage of automatic retries.** If a tool call fails, ellmer or chatlas will return the error to the model, and in many cases the model will attempt to recover and try again with new arguments.
 
@@ -475,3 +471,7 @@ display on your computer or mobile device.
 ````
 
 ::: 
+
+## Conclusion
+
+Tool calling lets you extend what an LLM can do by connecting it to your own functions. With ellmer and chatlas, it’s easy to get started. To learn more, see the tool calling vignettes for [ellmer](https://ellmer.tidyverse.org/articles/tool-calling.html) and [chatlas](https://posit-dev.github.io/chatlas/tool-calling.html).
