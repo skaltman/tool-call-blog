@@ -5,8 +5,6 @@ execute:
   eval: false
 ---
 
-## What is tool calling?
-
 Large language models (LLMs) are powerful but lack access to external data or systems unless you explicitly connect them. For example, if you ask an LLM what your schedule looks like next week, it will respond that it doesn't know because it doesn't have access to your calendar.
 
 ::: {.callout-tip}
@@ -143,7 +141,7 @@ chat.console()
 #' Gets the calendar events between start_date and end_date
 #'
 #' @param start_date Start date, in YYYY-MM-DD format.
-#' #' @param end_date End date, in YYYY-MM-DD format.
+#' @param end_date End date, in YYYY-MM-DD format.
 #' @return A tibble containing the calendar events in the date range. 
 get_calendar_events <- function(start_date, end_date) {
 
@@ -196,7 +194,7 @@ Let's take a look at each of the pieces.
 
 ### 1. Define the Tool Function
 
-Tool functions are regular R or Python functions. 
+Tool functions are ordinary R or Python functions. 
 
 ::: {.panel-tabset}
 
@@ -232,7 +230,7 @@ In R, use [roxygen2 comments](https://roxygen2.r-lib.org/) to document the funct
 #' Gets the calendar events between start_date and end_date
 #'
 #' @param start_date Start date, in YYYY-MM-DD format.
-#' #' @param end_date End date, in YYYY-MM-DD format.
+#' @param end_date End date, in YYYY-MM-DD format.
 #' @return A tibble containing the calendar events in the date range. 
 get_calendar_events <- function(start_date, end_date) {
 
@@ -341,9 +339,9 @@ Below, you can see our calendar tool in action.
 
 ### In a Shiny app
 
-Tool calling is especially useful in interactive contexts like Shiny apps because you might want the LLM to do things within your app -- create a novel plot, filter a datatable, update a value box, etc. -- and without tool-calling, the LLM can't really do that. Remember, they are limiting to essentially receiving and sending JSON-compatible files. Without extra work by you, they can't just work your Shiny app for you. Just like in our previous examples, you may also want the LLM in your Shiny app to have access to information that it doesn't natively have, like your current time or calendar.
+Tool calling can be especially useful in interactive contexts like Shiny apps. You might want the LLM to generate a plot, filter a table, update a value box, or take other actions in your app. Without tool calling, the LLM can’t do any of that.
 
-Implementing tool calling in a Shiny app is very similar to implementing tool calling outside a Shiny app. Include the tool code and tool registration code in the server function. You can see example apps that implement our calendar functionality [here]() (R) and [here]() (Python). 
+Implementing tool calling in a Shiny app is very similar to implementing tool calling outside a Shiny app. Include the tool code and tool registration code in the server function. 
 
 ::: {.callout-tip}
 To learn more about creating Shiny apps that interact with LLMs, see [shinychat](https://posit-dev.github.io/shinychat/) for R and the [Generative AI section](https://shiny.posit.co/py/docs/genai-inspiration.html) of the Shiny for Python website for Python. 
@@ -355,7 +353,7 @@ To learn more about creating Shiny apps that interact with LLMs, see [shinychat]
 
 2. **Debug using model responses.** If something goes wrong, you can ask the model what happened. It has access to the full error message returned by your tool function, which can help you diagnose the issue without even leaving the chat.
 
-3. **Write a thorough system prompt.** Registering the tool provides some information about how the tool should work, but including additional information in the system prompt makes it more likely that the LLM will actually call the tool how and when you want. See the [sidebot system prompt](https://github.com/jcheng5/r-sidebot/blob/main/prompt.md) for an example of a thorough, well-structured system prompt. You may also need to "debug" or add to your system prompt if the LLM isn't using your tool how you want. 
+3. **Write a thorough system prompt.** Registering the tool provides some information about how the tool should work, but including additional information in the system prompt makes it more likely that the LLM will actually call the tool how and when you want. See the [sidebot system prompt](https://github.com/jcheng5/r-sidebot/blob/main/prompt.md) for an example of a thorough, well-structured system prompt. You may also need to refine or “debug” your system prompt if the LLM isn’t using your tool as intended.
 4. **Verify that the tool is actually being called.** Sometimes, the model might simulate a response without actually triggering the tool. If the results seem off or the data seems fabricated, check that the tool function is actually being called. You may need to revise your system prompt to clarify when and how the LLM should initiate a tool call.
 
 5. **Chain multiple tools.** LLMs can call more than one tool per turn. In our example, the LLM first calls `get_date()` to fetch the current date, and then passes that information to `get_calendar_events()`, all in one turn.
