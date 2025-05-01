@@ -171,6 +171,10 @@ Keep in mind that returning large data frames can consume many tokens, as each c
 
 You can learn more about type limitations [here](https://ellmer.tidyverse.org/articles/tool-calling.html) for ellmer and here for [chatlas](https://posit-dev.github.io/chatlas/tool-calling.html#tool-limitations). 
 
+::: {.callout-note}
+If you want to implement the calendar tool yourself, you will need to generate your own credentials JSON file and (if using R) update the [email address](https://github.com/skaltman/tool-call-blog/blob/87cbf992e183fe33069ed8ca28e814b906c95a76/calendar.R#L8) used. You can learn how to generate the JSON file [here](https://developers.google.com/workspace/calendar/api/quickstart/python).  
+:::
+
 #### 2. Initialize a chat
 
 Create a chat with ellmer or chatlas using your desired chat function. You can see a list of available models and their corresponding functions for ellmer [here](https://ellmer.tidyverse.org/reference/index.html#chatbots) and for chatlas [here](https://posit-dev.github.io/chatlas/reference/#chat-model-providers). 
