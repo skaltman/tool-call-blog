@@ -92,109 +92,16 @@ While not required, you will also likely want to write a custom system prompt in
 
 ### Calendar API example
 
-Now, let's see it in action in our calendar example. Below is the code in Python and R. Next, we'll look at each of the components in more detail. 
-
-::: {.panel-tabset}
-
-### Python
-
-```{python}
-# 1. Define and document the tool
-
-def get_calendar_events(start_date: str, end_date: str) -> List[Dict[str, str]]:
-    """
-    Fetch Google Calendar events between two dates.
-
-    Parameters
-    ----------
-    start_date : str
-        The start date in "YYYY-MM-DD" format.
-    end_date : str
-        The end date in "YYYY-MM-DD" format.
-
-    Returns
-    -------
-    List[dict]
-        A list of events with 'start' and 'summary' fields.
-    """
-    creds = authenticate()
-    service = build_calendar_service(creds)
-    return query_api(service, start_date, end_date)
-
-# 2. Initialize a chat
-
-chat = chatlas.ChatAnthropic(system_prompt=open("prompt-calendar.md", "r").read())
-
-# 3. Register the tool
-
-chat.register_tool(get_calendar_events)
-
-#  Start the chat console 
-chat.console()
-```
-
-### R
-
-```{r}
-# 1. Define and document the tool
-
-#' Gets the calendar events between start_date and end_date
-#'
-#' @param start_date Start date, in YYYY-MM-DD format.
-#' @param end_date End date, in YYYY-MM-DD format.
-#' @return A tibble containing the calendar events in the date range. 
-get_calendar_events <- function(start_date, end_date) {
-
-  token <- calendar_authenticate()
-
-  events <- query_api(start_date, end_date, token)
-
-  if (length(events) == 0) { return(tibble()) }
-
-  tibble(
-    id = events$id,
-    summary = events$summary,
-    start = events$start$dateTime,
-    end =  events$end$dateTime
-  )
-}
-
-# 2. Initialize a chat
-
-chat <- chat_claude(system_prompt = readLines("prompt-calendar.md"))
-
-# 3. Register the tool
-
-chat$register_tool(tool(
-  get_calendar_events,
-  "Fetches calendar events between a specified start and end date.",
-  start_date = type_string(
-       "The start date from which to fetch calendar events. It should be a string representing the 
-date in the format YYYY-MM-DD.",
-       required = TRUE
-  ),
-  end_date = type_string(
-       "The end date up to which to fetch calendar events. It should be a string representing the 
-date in the format YYYY-MM-DD.",
-       required = TRUE
-  )
-))
-
-#  Start the chat console 
-live_console(chat)
-```
-
-:::
+Now, let's see it in action in our calendar example. 
 
 ::: {.callout-note} 
 To keep the example focused, we've created helper functions for authenticating to the Google Calendar API and querying the API. We also created a tool that can get the current date so the user can ask questions like, "What's my schedule like today?" You can see the full scripts here: [R](https://github.com/skaltman/tool-call-blog/blob/main/calendar.R), [Python](https://github.com/skaltman/tool-call-blog/blob/main/calendar.py).
 :::
 
-Let's take a look at each of the pieces.
 
-### 1. Define the Tool Function
+### 1. Define the Tool
 
-Tool functions are ordinary R or Python functions. 
+First, create a function that carries out the action you want the LLM to have access to. This should just be an ordinary R or Python function. 
 
 ::: {.panel-tabset}
 
@@ -334,7 +241,101 @@ The final step is just to either send an initial message to the model or start u
 
 Below, you can see our calendar tool in action.
 
-{{< video images/chat-console-ellmer.mov >}}
+{{< video images/chat-console-ellmer-short.mp4 >}}
+
+Below is all the code put together. You can also see the scripts here: [R](https://github.com/skaltman/tool-call-blog/blob/main/calendar.R), [Python](https://github.com/skaltman/tool-call-blog/blob/main/calendar.py).
+
+::: {.panel-tabset}
+
+### Python
+
+```{python}
+# 1. Define and document the tool
+
+def get_calendar_events(start_date: str, end_date: str) -> List[Dict[str, str]]:
+    """
+    Fetch Google Calendar events between two dates.
+
+    Parameters
+    ----------
+    start_date : str
+        The start date in "YYYY-MM-DD" format.
+    end_date : str
+        The end date in "YYYY-MM-DD" format.
+
+    Returns
+    -------
+    List[dict]
+        A list of events with 'start' and 'summary' fields.
+    """
+    creds = authenticate()
+    service = build_calendar_service(creds)
+    return query_api(service, start_date, end_date)
+
+# 2. Initialize a chat
+
+chat = chatlas.ChatAnthropic(system_prompt=open("prompt-calendar.md", "r").read())
+
+# 3. Register the tool
+
+chat.register_tool(get_calendar_events)
+
+#  Start the chat console 
+chat.console()
+```
+
+### R
+
+```{r}
+# 1. Define and document the tool
+
+#' Gets the calendar events between start_date and end_date
+#'
+#' @param start_date Start date, in YYYY-MM-DD format.
+#' @param end_date End date, in YYYY-MM-DD format.
+#' @return A tibble containing the calendar events in the date range. 
+get_calendar_events <- function(start_date, end_date) {
+
+  token <- calendar_authenticate()
+
+  events <- query_api(start_date, end_date, token)
+
+  if (length(events) == 0) { return(tibble()) }
+
+  tibble(
+    id = events$id,
+    summary = events$summary,
+    start = events$start$dateTime,
+    end =  events$end$dateTime
+  )
+}
+
+# 2. Initialize a chat
+
+chat <- chat_claude(system_prompt = readLines("prompt-calendar.md"))
+
+# 3. Register the tool
+
+chat$register_tool(tool(
+  get_calendar_events,
+  "Fetches calendar events between a specified start and end date.",
+  start_date = type_string(
+       "The start date from which to fetch calendar events. It should be a string representing the 
+date in the format YYYY-MM-DD.",
+       required = TRUE
+  ),
+  end_date = type_string(
+       "The end date up to which to fetch calendar events. It should be a string representing the 
+date in the format YYYY-MM-DD.",
+       required = TRUE
+  )
+))
+
+#  Start the chat console 
+live_console(chat)
+```
+
+:::
 
 
 ### In a Shiny app
@@ -349,11 +350,14 @@ To learn more about creating Shiny apps that interact with LLMs, see [shinychat]
 
 ## Tips and tricks
 
+Simple tool calls are easy to get started with, but getting the LLM to reliably use them the way you want can be tricky, especially as your tools grow more complex. Here are a few tips to help you build and debug tool calls more effectively.
+
 1. **Build incrementally.** Start by just writing and testing the core function, without involving the LLM. Once it works, register the tool, write a system prompt, and test in a simple chat console interface. Then, if you want, try embedding the tool in a Shiny app. Working step-by-step makes it easier to pinpoint issues.
 
 2. **Debug using model responses.** If something goes wrong, you can ask the model what happened. It has access to the full error message returned by your tool function, which can help you diagnose the issue without even leaving the chat.
 
 3. **Write a thorough system prompt.** Registering the tool provides some information about how the tool should work, but including additional information in the system prompt makes it more likely that the LLM will actually call the tool how and when you want. See the [sidebot system prompt](https://github.com/jcheng5/r-sidebot/blob/main/prompt.md) for an example of a thorough, well-structured system prompt. You may also need to refine or “debug” your system prompt if the LLM isn’t using your tool as intended.
+
 4. **Verify that the tool is actually being called.** Sometimes, the model might simulate a response without actually triggering the tool. If the results seem off or the data seems fabricated, check that the tool function is actually being called. You may need to revise your system prompt to clarify when and how the LLM should initiate a tool call.
 
 5. **Chain multiple tools.** LLMs can call more than one tool per turn. In our example, the LLM first calls `get_date()` to fetch the current date, and then passes that information to `get_calendar_events()`, all in one turn.
