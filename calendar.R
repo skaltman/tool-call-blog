@@ -5,13 +5,15 @@ library(dplyr)
 library(tibble)
 library(ellmer)
 
+USER_EMAIL <- "tool.call.demo@gmail.com"
+
 calendar_authenticate <- function() {
   my_app <- gargle_oauth_client_from_json("credentials-demo.json")
 
   token_fetch(
     scopes = "https://www.googleapis.com/auth/calendar.readonly",
     app = my_app,
-    email = "tool.call.demo@gmail.com",
+    email = USER_EMAIL,
     cache = ".secrets"
   )
 }
