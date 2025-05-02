@@ -7,13 +7,6 @@ execute:
 
 Large language models (LLMs) are powerful but lack access to external data or systems unless you explicitly connect them. For example, if you ask an LLM what your schedule looks like next week, it will respond that it doesn't know because it doesn't have access to your calendar.
 
-::: {.callout-tip}
-We will use [ellmer](https://ellmer.tidyverse.org/index.html) and [chatlas](https://posit-dev.github.io/chatlas/) to interact with LLMs. If you're unfamiliar with the basics of ellmer, chatlas, or working with LLM APIs, check out the packages websites and these resources:
-
-* [Announcing ellmer: A package for interacting with Large Language Models in R](https://posit.co/blog/announcing-ellmer/)
-* [Announcing chatlas: A package for interacting with Large Language Models in Python](https://posit.co/blog/announcing-chatlas/)
-:::
-
 ::: {.panel-tabset} 
 
 ## Python
@@ -51,6 +44,14 @@ suggestions on how to organize your upcoming week effectively.
 
 If the LLM could access our calendar, however, it could easily reason about it and answer our scheduling questions. We can use **tool calling** to grant the LLM that access.
 
+::: {.callout-tip}
+We will use [ellmer](https://ellmer.tidyverse.org/index.html) and [chatlas](https://posit-dev.github.io/chatlas/) to interact with LLMs. If you're unfamiliar with the basics of ellmer, chatlas, or working with LLM APIs, check out the packages websites and these resources:
+
+* [Announcing ellmer: A package for interacting with Large Language Models in R](https://posit.co/blog/announcing-ellmer/)
+* [Announcing chatlas: A package for interacting with Large Language Models in Python](https://posit.co/blog/announcing-chatlas/)
+:::
+
+
 ## What is tool calling? 
 
 Tool calling lets an LLM request that specific code be run when it needs to access data or perform actions outside its own capabilities. It works like this:
@@ -67,7 +68,7 @@ Tool calling lets an LLM request that specific code be run when it needs to acce
 For more information about tool-calling, see the tool calling articles on the [ellmer](https://ellmer.tidyverse.org/articles/tool-calling.html) and [chatlas websites](https://posit-dev.github.io/chatlas/tool-calling.html). 
 :::
 
-Importantly, the **model itself does not execute code**. The model only requests that the caller (our R or Python script) executes the code. 
+Importantly, the **model itself does not execute code**. The model only requests that the caller (in our case, R or Python) executes the code. 
 
 ## Why use tool calling?
 
@@ -75,7 +76,7 @@ Tool calling gives the LLM capabilities it wouldn't otherwise have access to, in
 
 * Access to APIs, databases, files, etc. 
 * The ability to use up-to-date or user-specific information.
-* Respond more intelligently or specifically to user requests.
+* More intelligent or specific responses to user requests, beyond the model's typical abilities.
 
 
 ## Implement tool calling in ellmer or chatlas
@@ -90,7 +91,7 @@ To implement tool calling with ellmer or chatlas, you need three components:
 
 While not required, you will also likely want to write a custom system prompt instructing the model when and how to use your tool.
 
-### Calendar API example
+## Calendar API example
 
 Now, let's see it in action in our calendar example. 
 
@@ -160,22 +161,20 @@ get_calendar_events <- function(start_date, end_date) {
 
 The process is largely the same as writing a function for a human user. When thinking about the functions inputs and outputs, you'll need to consider:
 
-* **What information does the LLM have access to?** Make sure the function's inputs are things you want the LLM to control and that it can provide.
+* **What information does the LLM have access to?** Make sure the function's inputs are elements you want the LLM to control and that it has the capability to provide.
 * **What information do you want the LLM to have after the tool call completes?** The function should return this information.
 
 For example, in our case, we want the LLM to be able to retrieve calendar information. Based on the user's request, the LLM can provide dates as inputs, and the function will return a list (Python) or tibble (R) of calendar events.
 
-Because the LLM communicates through JSON, inputs and outputs must use JSON-compatible data types, like floats, lists, or simple data frames. Do not return complex objects, functions, environments, etc. 
-
-Keep in mind that returning large data frames can consume many tokens, as each cell contributes to the token count.
+Because the LLM communicates through JSON, inputs and outputs must use JSON-compatible data types, like floats, lists, or simple data frames. Do not return complex objects, functions, environments, etc. Keep in mind that returning large data frames can consume many tokens, as each cell contributes to the token count. 
 
 You can learn more about type limitations [here](https://ellmer.tidyverse.org/articles/tool-calling.html) for ellmer and here for [chatlas](https://posit-dev.github.io/chatlas/tool-calling.html#tool-limitations). 
 
 ::: {.callout-note}
-If you want to implement the calendar tool yourself, you will need to generate your own credentials JSON file and (if using R) update the [email address](https://github.com/skaltman/tool-call-blog/blob/87cbf992e183fe33069ed8ca28e814b906c95a76/calendar.R#L8) used. You can learn how to generate the JSON file [here](https://developers.google.com/workspace/calendar/api/quickstart/python).  
+If you want to implement the calendar tool yourself, you will need to generate your own `credentials.json` and (if using R) update the [email address](https://github.com/skaltman/tool-call-blog/blob/87cbf992e183fe33069ed8ca28e814b906c95a76/calendar.R#L8) used. You can learn how to generate the JSON file [here](https://developers.google.com/workspace/calendar/api/quickstart/python).  
 :::
 
-#### 2. Initialize a chat
+### 2. Initialize a chat
 
 Create a chat with ellmer or chatlas using your desired chat function. You can see a list of available models and their corresponding functions for ellmer [here](https://ellmer.tidyverse.org/reference/index.html#chatbots) and for chatlas [here](https://posit-dev.github.io/chatlas/reference/#chat-model-providers). 
 
@@ -201,7 +200,7 @@ chat <- chat_claude(system_prompt = readLines("prompt-calendar.md"))
 
 :::
 
-#### 3. Register the tool
+### 3. Register the tool
 
 Finally, registering the tool allows the LLM to request the tool be called.
 
@@ -241,7 +240,7 @@ date in the format YYYY-MM-DD.",
 
 ### Start chatting
 
-The final step is just to either send an initial message to the model or start up an interactive conversation in the console (`chat.console()` in Python; `live_console(chat)` in R). 
+The final step is to either send an initial message to the model or start up an interactive conversation in the console (`chat.console()` in Python; `live_console(chat)` in R). 
 
 Below, you can see our calendar tool in action.
 
@@ -342,7 +341,7 @@ live_console(chat)
 :::
 
 
-### In a Shiny app
+## In a Shiny app
 
 Tool calling can be especially useful in interactive contexts like Shiny apps. You might want the LLM to generate a plot, filter a table, update a value box, or take other actions in your app. Without tool calling, the LLM can’t do any of that.
 
