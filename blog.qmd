@@ -375,7 +375,7 @@ Debugging tool calls is a bit different than regular debugging, since issues can
 2. **The tool registration.** Make sure you're registering the correct function, and that the argument types are specified correctly.
 3. **The system prompt.** The model needs clear instructions about when and how to use your tool.
 
-To help you diagnose problmes, chatlas and ellmer allow you to echo tool calls and their results. This shows how and when the model requested a tool call, what was returned, and any error message the tool produced.
+To help you diagnose problems, chatlas and ellmer allow you to echo tool calls and their results. This shows how and when the model requested a tool call, what was returned, and any error message the tool produced.
 
 ::: {.panel-tabset} 
 
