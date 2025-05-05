@@ -66,12 +66,7 @@ def get_calendar_events(start_date: str, end_date: str) -> List[Dict[str, str]]:
     return query_api(service, start_date, end_date)
 
 
-chat = chatlas.ChatAnthropic(
-    system_prompt="""
-        You are a helpful personal assistant. 
-        If asked about the user's calendar or schedule, call the tool `get_calendar_events()`.
-        """
-)
+chat = chatlas.ChatAnthropic(system_prompt=open("prompt-calendar.md", "r").read())
 
 chat.register_tool(get_calendar_events)
 chat.register_tool(get_date)
