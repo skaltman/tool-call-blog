@@ -1,11 +1,15 @@
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 import chatlas
 from typing import List, Dict
 from datetime import date
+import os
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 CREDENTIALS_FILE = "credentials-demo.json"
+TOKEN_FILE = "token.json"
 
 def get_date() -> str:
     """
@@ -19,8 +23,28 @@ def get_date() -> str:
     return date.today().isoformat()
 
 def authenticate():
-    flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-    return flow.run_local_server(port=0)
+    creds = None
+
+    if os.path.exists(TOKEN_FILE):
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                CREDENTIALS_FILE,
+                scopes=SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+            with open(TOKEN_FILE, "w") as token:
+                token.write(creds.to_json())
+
+    return creds
+
+# def authenticate():
+#     flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+#     return flow.run_local_server(port=0)
 
 def build_calendar_service(creds):
     return build("calendar", "v3", credentials=creds)
