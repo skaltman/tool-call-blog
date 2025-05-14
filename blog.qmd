@@ -244,7 +244,7 @@ The final step is to either send an initial message to the model or start up an 
 
 Below, you can see our calendar tool in action.
 
-{{< video images/chat-console-ellmer-short.mp4 >}}
+{{< video images/chat-console-chatlas-cropped.mp4 >}}
 
 Below is all the code put together. You can also see the scripts here: [R](https://github.com/skaltman/tool-call-blog/blob/main/calendar.R), [Python](https://github.com/skaltman/tool-call-blog/blob/main/calendar.py).
 
