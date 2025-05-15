@@ -5,7 +5,7 @@ execute:
   eval: false
 ---
 
-Large language models (LLMs) are powerful but lack access to external data or systems unless you explicitly connect them. For example, if you ask an LLM what your schedule looks like next week, it will respond that it doesn't know because it doesn't have access to your calendar.
+Want an LLM to help you schedule your week? Large language models (LLMs) are trained on vast amounts of public information, but lack access to many external or private data sources or systems, like your calendar. If you ask an LLM what your schedule looks like next week, it will respond that it doesn't know because it doesn't have access to your schedule.
 
 ::: {.panel-tabset} 
 
@@ -42,7 +42,7 @@ suggestions on how to organize your upcoming week effectively.
 ```
 :::
 
-If the LLM could access our calendar, however, it could easily reason about it and answer our scheduling questions. We can use **tool calling** to grant the LLM that access.
+If the LLM could access our calendar, however, it could easily reason about it and answer our scheduling questions. We can use **tool calling** to grant the LLM that access. Creating a tool with ellmer and chatlas is relatively straightfoward. **If you can write a function in R or Python, you can write a tool.**
 
 ::: {.callout-tip}
 We will use [ellmer](https://ellmer.tidyverse.org/index.html) and [chatlas](https://posit-dev.github.io/chatlas/) to interact with LLMs. If you're unfamiliar with the basics of ellmer, chatlas, or working with LLM APIs, check out the packages websites and these resources:
@@ -68,7 +68,9 @@ Tool calling lets an LLM request that specific code be run when it needs to acce
 For more information about tool-calling, see the tool calling articles on the [ellmer](https://ellmer.tidyverse.org/articles/tool-calling.html) and [chatlas websites](https://posit-dev.github.io/chatlas/tool-calling.html). 
 :::
 
-Importantly, the **model itself does not execute code**. The model only requests that the caller (in our case, R or Python) executes the code. 
+Importantly, the **model itself does not execute code**. The model only requests that the caller (in our case, R or Python) run the tool with particular arguments. The intelligence of the model is used to 1) know when it is appropriate to request the tool be called and 2) select reasonable arguments for the tool. This makes the model *agentic* because it can decide what to do, when, and how, by choosing and invoking tools as needed.
+
+ellmer and chatlas make tool calling in R and Python easy. In other frameworks, you may need to define tools using a JSON schema. ellmer and chatlas let you skip that step by letting you write native R or Python functions directly and handling the translation to and from JSON behind the scenes.
 
 ## Why use tool calling?
 
@@ -341,6 +343,8 @@ live_console(chat)
 :::
 
 
+
+
 ## In a Shiny app
 
 Tool calling can be especially useful in interactive contexts like Shiny apps. You might want the LLM to generate a plot, filter a table, update a value box, or take other actions in your app. Without tool calling, the LLM can’t do any of that.
@@ -376,6 +380,8 @@ Debugging tool calls is a bit different than regular debugging, since issues can
 3. **The system prompt.** The model needs clear instructions about when and how to use your tool.
 
 To help you diagnose problems, chatlas and ellmer allow you to echo tool calls and their results. This shows how and when the model requested a tool call, what was returned, and any error message the tool produced.
+
+This can also be useful if you want to expose the tool call and results to the user. 
 
 ::: {.panel-tabset} 
 
