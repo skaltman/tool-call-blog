@@ -42,7 +42,7 @@ suggestions on how to organize your upcoming week effectively.
 ```
 :::
 
-If the LLM could access our calendar, however, it could easily reason about it and answer our scheduling questions. We can use **tool calling** to grant the LLM that access. Creating a tool with ellmer and chatlas is relatively straightfoward. **If you can write a function in R or Python, you can write a tool.**
+If the LLM could access our calendar, however, it could easily reason about it and answer our scheduling questions. We can use **tool calling** to grant the LLM that access. Creating a tool with ellmer and chatlas is relatively straightforward. **If you can write a function in R or Python, you can write a tool.**
 
 ::: {.callout-tip}
 We will use [ellmer](https://ellmer.tidyverse.org/index.html) and [chatlas](https://posit-dev.github.io/chatlas/) to interact with LLMs. If you're unfamiliar with the basics of ellmer, chatlas, or working with LLM APIs, check out the packages websites and these resources:
